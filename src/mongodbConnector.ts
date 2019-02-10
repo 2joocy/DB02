@@ -46,13 +46,29 @@ export function distinctUsers(): Promise<Array<string>> {
 export function mentionsUser(): Promise<Array<string>> {
     return new Promise((resolve, reject) => {
         const collection = client.db(dbName).collection("twitter");
-        collection.find({text: /@\w+/}).count();
-        collection.find({}, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        });
+        collection.aggregate(
+            [
+              { $match: { text: /@\w*/ } },
+              { $unwind: "$user" },
+              { $group: { _id: "$user", number: { $sum: 1 } } },
+              { $sort: { number: -1 } },
+              { $limit: 10 }
+            ]
+          )
     })
+}
+
+export function mostActive(){
+    return new Promise((resolve, reject) => {
+        const collection = client.db(dbName).collection("twitter");
+        collection.aggregate(
+            [
+              { $unwind: "$user" },
+              { $group: { _id: "$user", number: { $sum: 1 } } },
+              { $sort: { number: -1 } },
+              { $limit: 10 }
+            ]
+          )
+    })
+    
 }
